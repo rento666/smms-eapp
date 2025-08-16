@@ -1,6 +1,6 @@
 {
   "name": "smms-eapp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A simple image uploader built with Electron for SM.MS",
   "license": "MIT",
   "author": "rento",
