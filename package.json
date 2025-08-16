@@ -1,0 +1,16 @@
+{
+  "name": "smms-eapp",
+  "version": "1.0.0",
+  "description": "an Electron application for SM.MS",
+  "license": "MIT",
+  "author": "rento",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "electron": "^37.3.0"
+  }
+}

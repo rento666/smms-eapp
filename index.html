@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图片上传器</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: #333;
+      overflow-x: hidden;
+      -webkit-user-select: none;
+    }
+
+    .titlebar {
+      height: 32px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 10px;
+      -webkit-app-region: drag;
+      border-bottom: 1px solid #e0e0e0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+
+    .titlebar-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .titlebar-controls {
+      display: flex;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-btn {
+      width: 24px;
+      height: 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 2px;
+      border-radius: 4px;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .titlebar-btn:hover {
+      background: #e0e0e0;
+      transform: scale(1.1);
+    }
+
+    .titlebar-btn.close:hover {
+      background: #dc3545;
+    }
+
+    .titlebar-btn img {
+      width: 12px;
+      height: 12px;
+      opacity: 0.6;
+    }
+
+    .titlebar-btn:hover img {
+      opacity: 1;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 40px auto 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .container:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .token-section {
+      margin-bottom: 20px;
+    }
+
+    .smms-btn {
+      background: #007bff;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      margin-bottom: 10px;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .smms-btn:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    .token-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    #tokenInput {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    #tokenInput:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+    }
+
+    .toggle-visibility {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-visibility img {
+      width: 20px;
+      height: 20px;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+    }
+
+    .toggle-visibility:hover img {
+      opacity: 1;
+    }
+
+    .upload-section {
+      border: 2px dashed #d0d7de;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: border-color 0.3s ease, background 0.3s ease;
+    }
+
+    .upload-section.dragover {
+      border-color: #007bff;
+      background: rgba(0, 123, 255, 0.05);
+    }
+
+    .upload-section p {
+      margin: 10px 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    #uploadInput {
+      display: none;
+    }
+
+    .upload-btn {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .upload-btn:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    .result-section {
+      margin-top: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .result-placeholder {
+      color: #999;
+      font-style: italic;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 200px; /* 限制预览图片最大高度 */
+      width: auto;
+      height: auto;
+      object-fit: contain; /* 等比缩放 */
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .preview-img:hover {
+      transform: scale(1.02);
+    }
+
+    .image-link {
+      color: #007bff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .image-link:hover {
+      color: #0056b3;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 30px 20px 20px 20px;
+      max-width: 90%;
+      max-height: 90%;
+      overflow: auto;
+      position: relative;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 8px;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #666;
+    }
+
+    .alert {
+      position: fixed;
+      top: 52px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+      z-index: 1100;
+    }
+
+    .alert.uploading {
+      background: #17a2b8;
+    }
+
+    .alert.success {
+      background: #28a745;
+    }
+
+    .alert.error {
+      background: #dc3545;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="titlebar">
+    <div class="titlebar-title">图片上传器</div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn minimize" onclick="window.electronAPI.minimizeWindow()">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItbWludXMiPjxsaW5lIHgxPSIzIiB5MT0iMTIiIHgyPSIyMSIgeTI9IjEyIi8+PC9zdmc+" alt="最小化">
+      </button>
+      <button class="titlebar-btn maximize" onclick="window.electronAPI.toggleMaximizeWindow()">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItc3F1YXJlIj48cmVjdCB4PSI3IiB5PSI3IiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHJ4PSIxIiAvPjwvc3ZnPg==" alt="最大化/还原">
+      </button>
+      <button class="titlebar-btn close" onclick="window.electronAPI.closeWindow()">
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXIteCI+PGxpbmUgeDE9IjE4IiB5MT0iNiIgeDI9IjYiIHkyPSIxOCIvPjxsaW5lIHgxPSI2IiB5MT0iNiIgeDI9IjE4IiB5Mj0iMTgiLz48L3N2Zz4=" alt="关闭">
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="token-section">
+      <button class="smms-btn" onclick="window.electronAPI.openSmmsWebsite()">访问 SM.MS 官网</button>
+      <label for="tokenInput">请输入 Token</label>
+      <div class="token-input-wrapper">
+        <input type="password" id="tokenInput" placeholder="输入您的 Token">
+        <button class="toggle-visibility">
+          <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI4IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXllIj48cGF0aCBkPSJNMSAxMmE5IDkgMCAwIDAgMjIgMHYwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyYTkgOSAwIDAgMCAyMiAwdiAwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyWiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L3N2Zz4=" alt="显示">
+        </button>
+      </div>
+    </div>
+    <div class="upload-section">
+      <p>拖拽图片到此处或点击选择图片以上传</p>
+      <input type="file" id="uploadInput" accept="image/*">
+      <button class="upload-btn">选择图片</button>
+    </div>
+    <div class="result-section" id="resultSection">
+      <p class="result-placeholder">暂无上传结果，请上传图片</p>
+    </div>
+  </div>
+
+  <div class="modal" id="imageModal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">×</button>
+      <img class="modal-img" id="modalImage" src="">
+    </div>
+  </div>
+
+  <div class="alert" id="alertBox"></div>
+
+  <script>
+    const tokenInput = document.getElementById('tokenInput');
+    const toggleBtn = document.querySelector('.toggle-visibility');
+    const toggleImg = toggleBtn.querySelector('img');
+    const uploadSection = document.querySelector('.upload-section');
+    const uploadInput = document.getElementById('uploadInput');
+    const uploadBtn = document.querySelector('.upload-btn');
+    const resultSection = document.getElementById('resultSection');
+    const alertBox = document.getElementById('alertBox');
+    const imageModal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+
+    let token = localStorage.getItem('authToken') || '';
+
+    // 初始化时加载保存的 token
+    if (token) {
+      tokenInput.value = token;
+    }
+
+    // Token 显隐切换
+    toggleBtn.addEventListener('click', () => {
+      const isPassword = tokenInput.type === 'password';
+      tokenInput.type = isPassword ? 'text' : 'password';
+      toggleImg.src = isPassword
+        ? 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXllLW9mZiI+PHBhdGggZD0iTTE3LjkgMy45QzE2LjIgMi43IDE0LjEgMiAxMiAyIDkuOSAyIDcuOCA2LjYgNS45IDMuOSAxLjYgOS41IDEgMTIgMSAxMnMtLjYgMi41IDEuNiA1LjUgNC4xIDYuNCA3LjEgNi40IDMuMSAwIDUuMy0xLjggMS45IDIuOCAyLjUgNS4zIDIuNSA1LjMtLjYgMi41LTEuNiA1LjUtNC4xIDYuNC03LjEgNi40LTYuNCAwLTguNC0yLjctMTAuOS01LjUtMS44LTIuOC0yLjUtNS4zLTIuNS01LjNaIi8+PGxpbmUgeDE9IjEiIHkxPSIxIiB4Mj0iMjMiIHkyPSIyMyIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L3N2Zz4='
+        : 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXllIj48cGF0aCBkPSJNMSAxMmE5IDkgMCAwIDAgMjIgMHYwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyYTkgOSAwIDAgMCAyMiAwdiAwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyWiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L3N2Zz4=';
+    });
+
+    // Token 输入后自动隐藏并保存
+    tokenInput.addEventListener('blur', () => {
+      token = tokenInput.value;
+      tokenInput.type = 'password';
+      toggleImg.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXllIj48cGF0aCBkPSJNMSAxMmE5IDkgMCAwIDAgMjIgMHYwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyYTkgOSAwIDAgMCAyMiAwdiAwYzAtNS41NC00LjQ0LTEwLTEwLTEwUzMgNi40NiAzIDEyWiIvPjxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjMiLz48L3N2Zz4=';
+      if (token) {
+        localStorage.setItem('authToken', token);
+        showAlert('Token 已保存', 'success');
+      }
+    });
+
+    // 拖拽上传
+    uploadSection.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadSection.classList.add('dragover');
+    });
+
+    uploadSection.addEventListener('dragleave', () => {
+      uploadSection.classList.remove('dragover');
+    });
+
+    uploadSection.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadSection.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileUpload(files[0]);
+      }
+    });
+
+    // 点击上传
+    uploadBtn.addEventListener('click', () => {
+      uploadInput.click();
+    });
+
+    uploadInput.addEventListener('change', () => {
+      if (uploadInput.files.length > 0) {
+        handleFileUpload(uploadInput.files[0]);
+      }
+    });
+
+    // 处理文件上传
+    async function handleFileUpload(file) {
+      if (!token) {
+        showAlert('请先输入 Token', 'error');
+        return;
+      }
+
+      showAlert('正在上传中...', 'uploading');
+
+      const formData = new FormData();
+      formData.append('smfile', file);
+      formData.append('format', 'json');
+
+      try {
+        const response = await fetch('https://sm.ms/api/v2/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': token
+          },
+          body: formData
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          const { url, width, height, filename } = result.data;
+          resultSection.innerHTML = `
+            <p>上传成功！</p>
+            <img class="preview-img" src="${url}" alt="${filename}" data-width="${width}" data-height="${height}">
+            <p>文件名: ${filename}</p>
+            <p>尺寸: ${width} x ${height}</p>
+            <p><span class="image-link" onclick="copyToClipboard('${url}')">${url}</span>(点击链接复制)</p>
+          `;
+          showAlert('图片上传成功', 'success');
+
+          // 添加图片预览点击事件
+          const previewImg = resultSection.querySelector('.preview-img');
+          previewImg.addEventListener('click', () => {
+            modalImage.src = url;
+            imageModal.style.display = 'flex';
+          });
+        } else {
+          showAlert(`上传失败: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        showAlert(`上传失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 显示弹窗提示
+    function showAlert(message, type) {
+      alertBox.textContent = message;
+      alertBox.className = `alert ${type}`;
+      alertBox.style.display = 'block';
+      if (type !== 'uploading') {
+        setTimeout(() => {
+          alertBox.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    // 关闭模态框
+    function closeModal() {
+      imageModal.style.display = 'none';
+    }
+
+    // 复制链接到剪切板
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showAlert('链接已复制到剪切板', 'success');
+      }).catch(() => {
+        showAlert('复制失败，请手动复制', 'error');
+      });
+    }
+  </script>
+</body>
+</html>
